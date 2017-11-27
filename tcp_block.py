@@ -21,22 +21,6 @@ def print_tcp(pkt):
     print "Dport: " + str(pkt[TCP].dport) + '\n\n'
 
 
-'''
-def send_backward(pkt, flags):
-    fake = IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
-        dport=pkt[TCP].sport,
-        sport=pkt[TCP].dport,
-        flags="RA" if flags == 'RST' else "FA",
-        seq=pkt[TCP].ack,
-        ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
-    )
-    print fake[TCP].flags
-    print_ip(fake)
-    print_tcp(fake)
-    send(fake, verbose=False)
-'''
-
-
 def send_backward_rst(pkt):
     fake = IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
         dport=pkt[TCP].sport,
