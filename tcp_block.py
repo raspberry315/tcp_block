@@ -1,5 +1,4 @@
-
-m scapy.all import *
+from scapy.all import *
 
 
 def isHttpRequest(data):
