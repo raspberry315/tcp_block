@@ -2,7 +2,7 @@ from scapy.all import *
 from threading import Timer
 import os
 
-fakeData = 'HTTP/1.1 302 Found\r\nLocation: http://test.gilgil.net\n\n'
+fakeData = 'HTTP/1.1 302 Found\r\nLocation: http://gilgil.net\n\n'
 
 def isHttpRequest(data):
     headers = str(data).splitlines()
