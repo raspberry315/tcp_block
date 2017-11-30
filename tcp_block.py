@@ -26,7 +26,8 @@ def send_backward_rst(pkt):
 
 
 def send_fakepkt(pkt):
-    fakeData = 'HTTP/1.1 404 Not Found\r\n\r\n'
+    fakeData = 'HTTP/1.1 404 Not Found\n\n'
+    fakeData2 = 'HTTP/1.1 302 Found\r\nLocation: http://test.gilgil.net\n\n'
     fake = Ether(dst=pkt[Ether].src, src=pkt[Ether].dst) / IP(dst=pkt[IP].src, src=pkt[IP].dst) / TCP(
         dport=pkt[TCP].sport,
         sport=pkt[TCP].dport,
