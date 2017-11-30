@@ -34,7 +34,6 @@ def send_fakepkt(pkt):
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload))
     ) / fakeData
-
     del pkt[IP].chksum
     del pkt[TCP].chksum
     sendp(fake, verbose=False)
@@ -50,7 +49,6 @@ def send_forward_rst(pkt):
     )
     del pkt[IP].chksum
     del pkt[TCP].chksum
-
     sendp(fake, verbose=False)
 
 
